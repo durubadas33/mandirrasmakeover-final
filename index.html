@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mandirra's Makeover - Booking Bill</title>
+    <style>
+        /* Base Styling for Mobile Responsiveness */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Gold Theme for Mandirra's Makeover */
+        .header-logo img {
+            display: block;
+            margin: 0 auto 15px;
+            max-width: 150px;
+            height: auto;
+        }
+        .my-info {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #D4AF37; /* Gold line */
+            padding-bottom: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        /* Form Styling */
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box; /* Important for full width */
+            font-size: 1em;
+        }
+        .auto-calc {
+            background-color: #ffe0b2; /* Light orange for calculated field */
+            font-weight: bold;
+        }
+        .required::after {
+            content: '*';
+            color: red;
+            margin-left: 5px;
+        }
+        .btn-generate {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #D4AF37; /* Gold button */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn-generate:hover {
+            background-color: #b8860b;
+        }
+
+        /* PDF/Print View Styling (Bill Display) */
+        #bill-output {
+            display: none; /* Hide until 'Generate Bill' is clicked */
+            padding: 20px;
+            border: 1px solid #ccc;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+        .bill-header, .bill-footer {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .bill-title {
+            color: #D4AF37;
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .bill-logo img {
+            max-width: 100px;
+            margin-bottom: 10px;
+        }
+        .bill-details p {
+            margin: 5px 0;
+            border-bottom: 1px dotted #eee;
+            padding-bottom: 5px;
+        }
+        .bill-details strong {
+            display: inline-block;
+            width: 150px; /* Aligns the data nicely */
+            color: #555;
+        }
+        .note {
+            text-align: center;
+            margin-top: 30px;
+            font-style: italic;
+            font-size: 0.85em;
+            color: #777;
+        }
+        .thank-you {
+            text-align: center;
+            margin-top: 40px;
+            font-weight: 600;
+            color: #D4AF37;
+            font-size: 1.1em;
+        }
+
+        /* Media Query for Print/PDF - removes unnecessary elements */
+        @media print {
+            body {
+                background: #fff;
+                color: #000;
+                padding: 0;
+            }
+            .container, .my-info, .header-logo, .form-section, .btn-generate {
+                display: none; /* Hide everything in print view */
+            }
+            #bill-output {
+                display: block !important; /* ONLY show the bill in print view */
+                box-shadow: none;
+                border: none;
+                margin: 0;
+                padding: 0;
+            }
+            /* Ensure text is black for printing */
+            .bill-title, .thank-you, .bill-details p {
+                color: #000 !important;
+            }
+            .bill-header {
+                border-bottom: 2px solid #000;
+            }
+            .bill-logo img {
+                /* Set a height for print visibility */
+                height: 100px; 
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-logo">
+        <img id="main-logo" src="1000100868.png" alt="Mandirra's Makeover Logo">
+    </div>
+
+    <div class="form-section">
+        <h2>Client & Booking Details</h2>
+
+        <div class="my-info">
+            <b>My Contact Details</b><h4>Email:</h4> <span id="my-email-display">my.makeup.email@example.com</span> <br><b>Number:</b> <span id="my-number-display">+91 98765 43210</span>
+        </div>
+
+        <label for="client-name" class="required">Client Name</label>
+        <input type="text" id="client-name" required>
+
+        <label for="client-address" class="required">Client Address</label>
+        <input type="text" id="client-address" required>
+
+        <label for="client-number" class="required">Client Number</label>
+        <input type="tel" id="client-number" required>
+
+        <label for="client-email">Client Email (Optional)</label>
+        <input type="email" id="client-email">
+
+        <label for="booking-for" class="required">Booking For</label>
+        <input type="text" id="booking-for" placeholder="e.g., Bridal Makeup, Party Makeup, etc." required>
+
+        <label for="ceremony-date" class="required">Ceremony Date</label>
+        <input type="date" id="ceremony-date" required>
+
+        <label for="num-heads" class="required">Number of Heads</label>
+        <input type="number" id="num-heads" min="1" required>
+
+        <label for="total-amount" class="required">Total Amount (₹)</label>
+        <input type="number" id="total-amount" oninput="calculatePending()" required>
+
+        <label for="booking-amount" class="required">Booking Amount (₹)</label>
+        <input type="number" id="booking-amount" oninput="calculatePending()" required>
+        
+        <label for="booking-date" class="required">Booking Amount Date</label>
+        <input type="date" id="booking-date" required>
+
+        <label for="pending-amount" class="required">Pending Amount (₹)</label>
+        <input type="text" id="pending-amount" class="auto-calc" value="0" readonly>
+
+        <label for="payment-type" class="required">Payment Type</label>
+        <select id="payment-type" required>
+            <option value="">-- Select Payment Type --</option>
+            <option value="Cash">Cash</option>
+            <option value="Online (GPay/Paytm)">Online (GPay/Paytm)</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="UPI">UPI</option>
+        </select>
+        
+        <button class="btn-generate" onclick="generateBill()">Generate Bill / Print PDF</button>
+
+    </div>
+</div>
+
+<div id="bill-output">
+    <div class="bill-header">
+        <div class="bill-logo">
+            <img id="pdf-logo" src="1000100868.png" alt="Mandirra's Makeover Logo">
+        </div>
+        <div class="bill-title">Mandirra's Makeover</div>
+        <p style="margin-top: 5px; font-size: 0.9em;">
+            <span id="bill-my-email"></span> | <span id="bill-my-number"></span>
+        </p>
+        <h3 style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;">Booking Bill Summary</h3>
+    </div>
+
+    <div class="bill-details">
+        <p><strong>Client Name:</strong> <span id="out-client-name"></span></p>
+        <p><strong>Client Address:</strong> <span id="out-client-address"></span></p>
+        <p><strong>Client Contact:</strong> <span id="out-client-number"></span></p>
+        <p><strong>Client Email:</strong> <span id="out-client-email"></span></p>
+        <p style="border-top: 2px solid #D4AF37; margin-top: 15px; padding-top: 10px;"></p>
+        <p><strong>Booking For:</strong> <span id="out-booking-for"></span></p>
+        <p><strong>Ceremony Date:</strong> <span id="out-ceremony-date"></span></p>
+        <p><strong>Number of Heads:</strong> <span id="out-num-heads"></span></p>
+        <p style="border-top: 1px solid #ccc; margin-top: 15px; padding-top: 10px;"></p>
+        <p><strong>Total Amount (₹):</strong> <span id="out-total-amount"></span></p>
+        <p><strong>Booking Amount (₹):</strong> <span id="out-booking-amount"></span></p>
+        <p><strong>Booking Date:</strong> <span id="out-booking-date"></span></p>
+        <p style="font-size: 1.1em; font-weight: bold; color: green; padding-top: 10px;">
+            <strong>Pending Amount (₹):</strong> <span id="out-pending-amount"></span>
+        </p>
+        <p><strong>Payment Type:</strong> <span id="out-payment-type"></span></p>
+    </div>
+
+    <p class="note">NOTE: This is a system-generated bill</p>
+
+    <div class="thank-you">
+        Thank you from Mandirra's Makeover.
+    </div>
+</div>
+
+<script>
+    // 14 & 15. My Info (Set your details here!)
+    const MY_NUMBER = "+91 6291283929"; 
+    const MY_EMAIL = 'bk.mandiradas@gmail.com'; 
+    
+    // Set My Info in the display area
+    document.getElementById('my-number-display').textContent = MY_NUMBER;
+    document.getElementById('my-email-display').textContent = MY_EMAIL;
+    
+    /**
+     * 11. Automatically calculates the Pending Amount
+     */
+    function calculatePending() {
+        const total = parseFloat(document.getElementById('total-amount').value) || 0;
+        const booked = parseFloat(document.getElementById('booking-amount').value) || 0;
+        
+        const pending = total - booked;
+        document.getElementById('pending-amount').value = pending.toFixed(2);
+    }
+    
+    /**
+     * 13. Generates the bill data and prepares the page for printing.
+     */
+    function generateBill() {
+        // Collect all input values
+        const clientName = document.getElementById('client-name').value.trim();
+        const clientAddress = document.getElementById('client-address').value.trim();
+        const clientNumber = document.getElementById('client-number').value.trim();
+        const clientEmail = document.getElementById('client-email').value.trim() || 'N/A';
+        const bookingFor = document.getElementById('booking-for').value.trim();
+        const ceremonyDate = document.getElementById('ceremony-date').value;
+        const numHeads = document.getElementById('num-heads').value.trim();
+        const totalAmount = document.getElementById('total-amount').value.trim();
+        const bookingAmount = document.getElementById('booking-amount').value.trim();
+        const bookingDate = document.getElementById('booking-date').value;
+        const pendingAmount = document.getElementById('pending-amount').value.trim();
+        const paymentType = document.getElementById('payment-type').value;
+
+        // Simple validation for mandatory fields
+        if (!clientName || !clientAddress || !clientNumber || !bookingFor || !ceremonyDate || !numHeads || !totalAmount || !bookingAmount || !bookingDate || !paymentType) {
+            alert('Please fill in all mandatory fields!');
+            return;
+        }
+
+        // Format Date for better display
+        const formatDate = (dateString) => {
+            if (!dateString) return 'N/A';
+            try {
+                return new Date(dateString).toLocaleDateString('en-IN', {
+                    year: 'numeric', month: 'long', day: 'numeric'
+                });
+            } catch {
+                return dateString;
+            }
+        };
+
+        // Populate the Bill Output Area
+        document.getElementById('bill-my-email').textContent = MY_EMAIL;
+        document.getElementById('bill-my-number').textContent = MY_NUMBER;
+        
+        document.getElementById('out-client-name').textContent = clientName;
+        document.getElementById('out-client-address').textContent = clientAddress;
+        document.getElementById('out-client-number').textContent = clientNumber;
+        document.getElementById('out-client-email').textContent = clientEmail;
+        document.getElementById('out-booking-for').textContent = bookingFor;
+        document.getElementById('out-ceremony-date').textContent = formatDate(ceremonyDate);
+        document.getElementById('out-num-heads').textContent = numHeads;
+        document.getElementById('out-total-amount').textContent = parseFloat(totalAmount).toFixed(2);
+        document.getElementById('out-booking-amount').textContent = parseFloat(bookingAmount).toFixed(2);
+        document.getElementById('out-booking-date').textContent = formatDate(bookingDate);
+        document.getElementById('out-pending-amount').textContent = parseFloat(pendingAmount).toFixed(2);
+        document.getElementById('out-payment-type').textContent = paymentType;
+
+        // Hide the form and show the bill output temporarily for printing
+        document.querySelector('.form-section').style.display = 'none';
+        document.querySelector('.my-info').style.display = 'none';
+        document.getElementById('bill-output').style.display = 'block';
+
+        // Trigger the print dialog
+        window.print();
+        
+        // Restore the original view after printing
+        document.querySelector('.form-section').style.display = 'block';
+        document.querySelector('.my-info').style.display = 'block';
+        document.getElementById('bill-output').style.display = 'none';
+    }
+    
+    // Initial calculation when the page loads
+    window.onload = calculatePending; 
+</script>
+
+</body>
+</html>
